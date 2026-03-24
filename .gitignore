@@ -1,0 +1,33 @@
+# Binaries
+/cw
+/cw-go
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build output
+bin/
+dist/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+go.sum
+*.test
+*.out
+
+# Local development
+.env
+.env.local
