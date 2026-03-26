@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # ============================================================================
 # GitHub Releases에 바이너리 업로드 스크립트
@@ -20,12 +19,16 @@ DRAFT_MODE=false
 
 # 바이너리 찾기 (도구별 dist 디렉토리)
 find_release_dir() {
-    # tools/*/dist 패턴으로 첫 번째 dist 디렉토리 찾기
-    local dir=$(find ./tools -name "dist" -type d | head -1)
-    if [ -n "$dir" ]; then
-        echo "$dir"
+    # 루트 dist 디렉토리 우선, 없으면 tools/*/dist 찾기
+    if [ -d "./dist" ]; then
+        echo "./dist"
     else
-        echo ""
+        local dir=$(find ./tools -name "dist" -type d | head -1)
+        if [ -n "$dir" ]; then
+            echo "$dir"
+        else
+            echo ""
+        fi
     fi
 }
 

@@ -70,10 +70,13 @@ release-build: $(addprefix release-build-,$(PLATFORMS))
 	@echo "✓ Built release binaries for $(TOOL)"
 
 release-build-%:
-	@mkdir -p $(abspath $(RELEASE_DIR))
+	@mkdir -p $(abspath $(RELEASE_DIR))/staging
 	@echo "Building $(TOOL) for $*..."
 	@$(platform-$*) go build \
-		-o $(abspath $(RELEASE_DIR))/$(TOOL)-$(VERSION)-$* \
+		-o $(abspath $(RELEASE_DIR))/staging/$(TOOL) \
 		$(CMD_DIR)
-	@chmod +x $(abspath $(RELEASE_DIR))/$(TOOL)-$(VERSION)-$*
-	@echo "  ✓ $(TOOL)-$(VERSION)-$*"
+	@chmod +x $(abspath $(RELEASE_DIR))/staging/$(TOOL)
+	@[ -f cw-completion.sh ] && cp cw-completion.sh $(abspath $(RELEASE_DIR))/staging/ || true
+	@cd $(abspath $(RELEASE_DIR))/staging && tar -czf ../$(TOOL)-$(VERSION)-$*.tar.gz . && cd ..
+	@rm -rf $(abspath $(RELEASE_DIR))/staging
+	@echo "  ✓ $(TOOL)-$(VERSION)-$*.tar.gz"
