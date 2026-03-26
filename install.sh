@@ -198,6 +198,16 @@ install_tool() {
         chmod +x ~/.bash_completion.d/$tool
         log_success "Installed completion: ~/.bash_completion.d/$tool"
     fi
+
+    # 4. Shell wrapper를 ~/.bashrc에 자동 추가
+    if [ -f "$staging_dir/.bashrc.$tool" ]; then
+        if ! grep -q "source ~/.bashrc.$tool" ~/.bashrc 2>/dev/null; then
+            echo "" >> ~/.bashrc
+            echo "# $tool configuration" >> ~/.bashrc
+            echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool" >> ~/.bashrc
+            log_success "Added to ~/.bashrc (restart shell to apply)"
+        fi
+    fi
 }
 
 # ============================================================================
