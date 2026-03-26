@@ -31,3 +31,5 @@ go.sum
 # Local development
 .env
 .env.local
+.github-token
+.release-token
