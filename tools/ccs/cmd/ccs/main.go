@@ -12,13 +12,18 @@ import (
 )
 
 func main() {
+	var command string
+	var args []string
+
 	if len(os.Args) < 2 {
 		printHelp()
-		os.Exit(1)
+		fmt.Println()
+		command = "status"
+		args = []string{}
+	} else {
+		command = os.Args[1]
+		args = os.Args[2:]
 	}
-
-	command := os.Args[1]
-	args := os.Args[2:]
 
 	switch command {
 	case "list":
