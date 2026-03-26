@@ -224,7 +224,7 @@ func cmdStatus(args []string) {
 	current := GetCurrent()
 
 	if current == "" {
-		fmt.Println("No active account")
+		fmt.Println("Status: No active account")
 		os.Exit(0)
 	}
 
@@ -234,13 +234,11 @@ func cmdStatus(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Active account: %s\n", account.Name)
-	fmt.Printf("Path: %s\n", account.Path)
-	tokenStatus := "missing"
+	tokenEmoji := "❌"
 	if account.TokenExists {
-		tokenStatus = "present"
+		tokenEmoji = "✓"
 	}
-	fmt.Printf("Token: %s\n", tokenStatus)
+	fmt.Printf("Status: Last active account '%s' (%s Token)\n", account.Name, tokenEmoji)
 }
 
 // cmdVerify verifies account integrity
@@ -376,7 +374,7 @@ func cmdResume(args []string) {
 	}
 
 	current := GetCurrent()
-	fmt.Printf("Resumed account: %s\n", current)
+	fmt.Printf("ccs: account resumed (%s)\n", current)
 }
 
 // cmdSaveCurrent saves the current ~/.claude state as an account
@@ -457,8 +455,6 @@ Examples:
   ccs status                # Show active account
   ccs verify                # Verify active account
   ccs delete personal       # Delete 'personal' account
-
-Data location: ~/.claude-accounts/
 `
 	fmt.Print(help)
 }

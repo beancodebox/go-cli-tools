@@ -14,7 +14,7 @@ PLATFORMS := linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64
 # ============================================================================
 help:
 	@echo "Development targets:"
-	@echo "  make build          - Build cw for current platform"
+	@echo "  make build          - Build current platform"
 	@echo "  make build-all      - Build all tools for current platform"
 	@echo "  make test           - Run all tests"
 	@echo "  make install        - Install cw to ~/.local/bin"
@@ -22,14 +22,12 @@ help:
 	@echo "  make clean          - Remove build artifacts"
 	@echo ""
 	@echo "Release targets:"
-	@echo "  make release-build          - Build all tools for all platforms"
-	@echo "  make release-publish        - Publish public release to GitHub"
-	@echo "  make release-publish-draft  - Publish draft release (for testing)"
+	@echo "  make build VERSION=v0.1.0      - Build for all platforms (tools/*/dist/)"
+	@echo "  make release VERSION=v0.1.0    - Full release (build → dist → GitHub publish)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make release-build VERSION=v1.0.0"
-	@echo "  make release-publish-draft VERSION=v1.0.0  # Test (not public)"
-	@echo "  make release-publish VERSION=v1.0.0        # Official release"
+	@echo "  make build VERSION=v0.1.0      # Build only"
+	@echo "  make release VERSION=v0.1.0    # Build + dist + publish to GitHub"
 
 # ============================================================================
 # 빌드: 모든 도구
@@ -84,42 +82,35 @@ clean:
 	@echo "✓ Clean complete"
 
 # ============================================================================
-# 릴리스 빌드 (모든 플랫폼)
+# 빌드 (모든 플랫폼)
 # ============================================================================
-release-build: $(addprefix release-build-,$(TOOLS))
-	@echo "✓ Release builds complete:"
-	@find . -name "*-$(VERSION)-*" -type f 2>/dev/null | sort
-
-release-build-%:
-	@echo "Building release binaries for $*..."
-	@$(MAKE) -C tools/$* release-build RELEASE_DIR=$(RELEASE_DIR) VERSION=$(VERSION)
-
-# ============================================================================
-# 릴리스 발행 (GitHub Releases)
-# ============================================================================
-release-publish:
+build: VERSION?=
+build:
 	@if [ -z "$(VERSION)" ]; then \
-		echo "❌ VERSION is required: make release-publish VERSION=v1.0.0"; \
+		echo "❌ VERSION required: make build VERSION=v0.1.0"; \
 		exit 1; \
 	fi
-	@if [ ! -f release.sh ]; then \
-		echo "❌ release.sh not found"; \
+	@for tool in $(TOOLS); do \
+		$(MAKE) -C tools/$$tool release-build VERSION=$(VERSION); \
+	done
+	@echo ""
+	@echo "✓ Build complete. Files in tools/*/dist/"
+
+# ============================================================================
+# 배포 (빌드 → dist 복사 → GitHub Release)
+# ============================================================================
+release: VERSION?=
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION required: make release VERSION=v0.1.0"; \
 		exit 1; \
 	fi
-	@echo "Publishing release $(VERSION) to GitHub..."
+	@$(MAKE) build VERSION=$(VERSION)
+	@echo ""
+	@echo "Copying to $(RELEASE_DIR)..."
+	@cp tools/*/dist/*-$(VERSION)-* $(RELEASE_DIR)/ 2>/dev/null || true
+	@echo "✓ Copied to $(RELEASE_DIR)"
+	@echo ""
+	@echo "Publishing to GitHub..."
 	@bash release.sh $(VERSION)
 	@echo "✓ Release published: $(VERSION)"
-
-# 드래프트 릴리스 (테스트용, 비공개)
-release-publish-draft:
-	@if [ -z "$(VERSION)" ]; then \
-		echo "❌ VERSION is required: make release-publish-draft VERSION=v1.0.0"; \
-		exit 1; \
-	fi
-	@if [ ! -f release.sh ]; then \
-		echo "❌ release.sh not found"; \
-		exit 1; \
-	fi
-	@echo "Publishing DRAFT release $(VERSION) to GitHub..."
-	@bash release.sh $(VERSION) --draft
-	@echo "✓ Draft release published: $(VERSION) (not publicly visible)"

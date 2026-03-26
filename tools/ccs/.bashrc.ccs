@@ -18,13 +18,13 @@ ccs() {
 # === 새 쉘 시작 시 마지막 활성 계정 자동 로드 ===
 if [ -f ~/.claude-accounts/.last-active ]; then
   account=$(cat ~/.claude-accounts/.last-active 2>/dev/null)
-  if [ -n "$account" ] && ccs resume >/dev/null 2>&1; then
-    :  # silently resumed
-  else
-    # resume 실패 시 토큰만 로드
-    if [ -n "$account" ] && [ -f ~/.claude-accounts/"$account"/.token ]; then
-      export CLAUDE_CODE_OAUTH_TOKEN=$(cat ~/.claude-accounts/"$account"/.token)
-    fi
+  if [ -n "$account" ]; then
+    ccs resume 2>/dev/null || {
+      # resume 실패 시 토큰만 로드
+      if [ -f ~/.claude-accounts/"$account"/.token ]; then
+        export CLAUDE_CODE_OAUTH_TOKEN=$(cat ~/.claude-accounts/"$account"/.token)
+      fi
+    }
   fi
 fi
 
