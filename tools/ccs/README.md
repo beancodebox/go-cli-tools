@@ -100,13 +100,9 @@ ccs help              # 전체 도움말
 ```
 ~/.claude-accounts/
 ├── work/
-│   ├── .token                  # API 토큰 (0600 권한)
-│   ├── settings.json
-│   ├── conversations/
-│   └── ...
+│   └── .token                  # API 토큰 (0600 권한)
 ├── personal/
-│   └── ...
-├── current-backup/             # 전환 시 백업
+│   └── .token
 └── .last-active                # 마지막 활성 계정명
 ```
 

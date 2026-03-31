@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,40 +106,13 @@ func Get(name string) (Account, error) {
 	}, nil
 }
 
-// Use activates an account by copying its files to ~/.claude
-// This function also updates .last-active with the account name
+// Use activates an account by updating .last-active
+// The shell wrapper sets the token environment variable
 func Use(name string) error {
 	// Verify account exists
-	account, err := Get(name)
+	_, err := Get(name)
 	if err != nil {
 		return err
-	}
-
-	claudeDir, err := ClaudeDir()
-	if err != nil {
-		return err
-	}
-
-	backupDir, err := CurrentBackupDir()
-	if err != nil {
-		return err
-	}
-
-	// Ensure backup directory exists
-	if err := os.MkdirAll(backupDir, 0700); err != nil {
-		return fmt.Errorf("failed to create backup directory: %w", err)
-	}
-
-	// Backup current ~/.claude state
-	if err := backupCurrentState(claudeDir, backupDir); err != nil {
-		return fmt.Errorf("failed to backup current state: %w", err)
-	}
-
-	// Copy account files to ~/.claude
-	if err := restoreAccountState(account.Path, claudeDir); err != nil {
-		// On failure, try to restore from backup
-		_ = restoreAccountState(backupDir, claudeDir)
-		return fmt.Errorf("failed to restore account state: %w", err)
 	}
 
 	// Update .last-active file
@@ -181,15 +153,10 @@ func Delete(name string) error {
 	return nil
 }
 
-// SaveCurrent saves the current ~/.claude state as an account
+// SaveCurrent saves the current token as an account
 func SaveCurrent(name string) error {
 	if name == "" {
 		return fmt.Errorf("account name cannot be empty")
-	}
-
-	claudeDir, err := ClaudeDir()
-	if err != nil {
-		return err
 	}
 
 	accountPath, err := AccountPath(name)
@@ -202,9 +169,15 @@ func SaveCurrent(name string) error {
 		return fmt.Errorf("failed to create account directory: %w", err)
 	}
 
-	// Copy ~/.claude to account directory
-	if err := copyDir(claudeDir, accountPath); err != nil {
-		return fmt.Errorf("failed to save current state: %w", err)
+	// Save token from environment
+	token := os.Getenv("CLAUDE_CODE_OAUTH_TOKEN")
+	if token == "" {
+		return fmt.Errorf("no token in environment")
+	}
+
+	tokenPath := filepath.Join(accountPath, ".token")
+	if err := os.WriteFile(tokenPath, []byte(token+"\n"), 0600); err != nil {
+		return fmt.Errorf("failed to save token: %w", err)
 	}
 
 	return nil
@@ -331,76 +304,6 @@ func Verify(name string) []string {
 	}
 
 	return issues
-}
-
-// backupCurrentState backs up the current ~/.claude state
-func backupCurrentState(claudeDir, backupDir string) error {
-	// Remove old backup
-	_ = os.RemoveAll(backupDir)
-
-	// Create backup directory
-	if err := os.MkdirAll(backupDir, 0700); err != nil {
-		return err
-	}
-
-	// Check if claude directory exists
-	if _, err := os.Stat(claudeDir); err != nil {
-		if os.IsNotExist(err) {
-			// Claude directory doesn't exist yet, nothing to backup
-			return nil
-		}
-		return err
-	}
-
-	return copyDir(claudeDir, backupDir)
-}
-
-// restoreAccountState restores an account's state to ~/.claude
-func restoreAccountState(accountPath, claudeDir string) error {
-	// Remove current claude directory
-	_ = os.RemoveAll(claudeDir)
-
-	// Recreate claude directory
-	if err := os.MkdirAll(claudeDir, 0700); err != nil {
-		return err
-	}
-
-	// Copy account files
-	return copyDir(accountPath, claudeDir)
-}
-
-// copyDir recursively copies a directory
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Compute relative path
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-
-		target := filepath.Join(dst, rel)
-
-		if info.IsDir() {
-			return os.MkdirAll(target, 0700)
-		}
-
-		// Copy file
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", path, err)
-		}
-
-		// Preserve file permissions
-		if err := os.WriteFile(target, data, info.Mode()); err != nil {
-			return fmt.Errorf("failed to write %s: %w", target, err)
-		}
-
-		return nil
-	})
 }
 
 // PromptForConfirmation prompts user to type account name to confirm deletion

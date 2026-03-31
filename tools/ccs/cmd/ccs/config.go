@@ -33,15 +33,6 @@ func LastActiveFile() (string, error) {
 	return filepath.Join(dir, ".last-active"), nil
 }
 
-// CurrentBackupDir returns the path to ~/.claude-accounts/current-backup
-func CurrentBackupDir() (string, error) {
-	dir, err := AccountsDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "current-backup"), nil
-}
-
 // AccountPath returns the path to a specific account
 func AccountPath(accountName string) (string, error) {
 	dir, err := AccountsDir()
