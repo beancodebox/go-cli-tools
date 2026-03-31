@@ -89,9 +89,9 @@ get_latest_release() {
     local releases_url="https://api.github.com/repos/$GITHUB_REPO/releases?per_page=10"
 
     # curl이 없으면 wget 사용
-    if command -v curl &> /dev/null; then
-        curl -s "$releases_url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//;s/".*//'
-    elif command -v wget &> /dev/null; then
+    if command -v curl >/dev/null 2>&1; then
+        curl -s "$releases_url" < /dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//;s/".*//'
+    elif command -v wget >/dev/null 2>&1; then
         wget -q -O - "$releases_url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "//;s/".*//'
     else
         log_error "Neither curl nor wget found. Please install one of them."
@@ -120,12 +120,12 @@ download_binary() {
     else
         log_info "Downloading $package_name from GitHub Releases..."
 
-        if command -v curl &> /dev/null; then
-            if ! curl -fsSL -o "$cache_path" "$download_url"; then
+        if command -v curl >/dev/null 2>&1; then
+            if ! curl -fsSL -o "$cache_path" "$download_url" < /dev/null; then
                 log_error "Failed to download: $download_url"
                 return 1
             fi
-        elif command -v wget &> /dev/null; then
+        elif command -v wget >/dev/null 2>&1; then
             if ! wget -q -O "$cache_path" "$download_url"; then
                 log_error "Failed to download: $download_url"
                 return 1

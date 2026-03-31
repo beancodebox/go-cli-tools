@@ -5,11 +5,12 @@ Go로 만든 CLI 도구 모음입니다.
 ## 🚀 빠른 시작
 
 ```bash
-# 설치
-sh | curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh
+# 전체 설치 (cw, ccs)
+curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh
 
-# 또는 cw만 설치
+# 특정 도구만 설치
 curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh -s cw
+curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh -s ccs
 ```
 
 ## 📦 도구들
