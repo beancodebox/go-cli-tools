@@ -5,9 +5,9 @@ set -e
 # go-cli-tools 설치 스크립트 (GitHub Releases 기반)
 #
 # 사용법:
-#   sh | https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh         # 대화형
-#   sh | https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh cw      # cw 설치
-#   ./install.sh cw                                                                          # 로컬 실행
+#   curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh          # 전체 설치
+#   curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh -s cw    # cw만 설치
+#   ./install.sh cw                                                                                      # 로컬 실행
 # ============================================================================
 
 GITHUB_REPO="beancodebox/go-cli-tools"
@@ -214,11 +214,14 @@ install_tool() {
 # 함수: PATH 확인
 # ============================================================================
 check_path() {
-    if [[ ":$PATH:" == *":$INSTALL_DIR:"* ]]; then
-        return 0
-    else
-        return 1
-    fi
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # ============================================================================
@@ -242,67 +245,22 @@ show_help() {
 go-cli-tools Installer
 
 Usage:
-  ./install.sh              Install interactively (choose tool)
-  ./install.sh cw           Install cw tool
-  ./install.sh cw xxx       Install multiple tools
+  ./install.sh              Install all tools
+  ./install.sh cw           Install cw tool only
+  ./install.sh cw ccs       Install multiple tools
   ./install.sh --help       Show this help message
-  ./install.sh --version    Show version info
 
 Web usage:
-  sh | curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh
+  curl -fsSL https://raw.githubusercontent.com/beancodebox/go-cli-tools/main/install.sh | sh
 
 Available tools:
   $TOOLS_AVAILABLE
 
 Examples:
-  ./install.sh              # Choose tools interactively
-  ./install.sh cw           # Install cw from latest release
+  ./install.sh              # Install all tools
+  ./install.sh cw           # Install cw only
+  ./install.sh cw ccs       # Install cw and ccs
 EOF
-}
-
-# ============================================================================
-# 함수: 대화형 모드
-# ============================================================================
-interactive_mode() {
-    echo ""
-    log_info "Interactive installation"
-    echo ""
-    echo "Available tools:"
-    local i=1
-    for tool in $TOOLS_AVAILABLE; do
-        echo "  $i) $tool"
-        ((i++))
-    done
-    echo ""
-
-    read -p "Select tools (space-separated numbers or names, e.g. '1' or 'cw'): " selection
-
-    if [ -z "$selection" ]; then
-        log_warn "No tools selected"
-        exit 0
-    fi
-
-    local tools_to_install=""
-    for item in $selection; do
-        if [[ "$item" =~ ^[0-9]+$ ]]; then
-            local idx=1
-            for tool in $TOOLS_AVAILABLE; do
-                if [ "$idx" -eq "$item" ]; then
-                    tools_to_install="$tools_to_install $tool"
-                    break
-                fi
-                ((idx++))
-            done
-        else
-            if echo "$TOOLS_AVAILABLE" | grep -q "$item"; then
-                tools_to_install="$tools_to_install $item"
-            else
-                log_error "Unknown tool: $item"
-            fi
-        fi
-    done
-
-    echo "$tools_to_install"
 }
 
 # ============================================================================
@@ -339,7 +297,7 @@ main() {
     fi
 
     if [ $# -eq 0 ]; then
-        tools_to_install=$(interactive_mode)
+        tools_to_install="$TOOLS_AVAILABLE"
     else
         tools_to_install="$@"
     fi
