@@ -160,10 +160,10 @@ fi
 
 echo ""
 
-# 바이너리 파일 업로드
+# 바이너리 파일 업로드 (지정된 버전만)
 log_info "Uploading binaries..."
 uploaded=0
-for binary in "$RELEASE_DIR"/*; do
+for binary in "$RELEASE_DIR"/*"$VERSION"*.tar.gz; do
     if [ ! -f "$binary" ]; then
         continue
     fi
