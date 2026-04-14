@@ -1,0 +1,35 @@
+#compdef _cw cw
+
+################################################################################
+# cw - Workspace Navigator - Zsh Completion
+#
+# 설치 위치: ~/.local/share/zsh/site-functions/_cw
+# 자동으로 로드됨 (fpath에 포함되면)
+#
+################################################################################
+
+_cw() {
+  local -a accounts flags
+
+  flags=(
+    '--resume[resume from last session]'
+    '--root[set root directory (saves to ~/.cw)]:directory:_directories'
+    '-r[short for --root]:directory:_directories'
+    '--account[specify Claude account]:account:_cw_account_completion'
+    '-a[select Claude account interactively]'
+    '--help[show help message]'
+  )
+
+  # 첫 번째 인자에서 플래그 완성
+  _arguments -s -S "$flags[@]"
+}
+
+# 계정명 완성 함수
+_cw_account_completion() {
+  local -a accounts
+
+  if command -v ccs &> /dev/null; then
+    accounts=($(ccs list --plain 2>/dev/null))
+    _describe 'account' accounts
+  fi
+}

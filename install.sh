@@ -177,9 +177,15 @@ install_tool() {
     local staging_dir
     staging_dir=$(download_binary "$tool" "$version" "$platform") || return 1
 
+    # XDG Base Directory 표준 경로
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+    BASH_COMPLETION_DIR="$XDG_DATA_HOME/bash-completion.d"
+    ZSH_SITE_FUNCTIONS_DIR="$XDG_DATA_HOME/zsh/site-functions"
+
     # 설치 디렉토리 생성
     mkdir -p "$INSTALL_DIR"
-    mkdir -p ~/.bash_completion.d 2>/dev/null || true
+    mkdir -p "$BASH_COMPLETION_DIR"
+    mkdir -p "$ZSH_SITE_FUNCTIONS_DIR"
 
     # 1. 바이너리 설치
     cp "$staging_dir/$tool" "$INSTALL_DIR/$tool"
@@ -192,33 +198,55 @@ install_tool() {
         log_success "Installed shell wrapper: ~/.bashrc.$tool"
     fi
 
-    # 3. Bash completion 설치
-    if [ -f "$staging_dir/$tool-completion.sh" ]; then
-        cp "$staging_dir/$tool-completion.sh" ~/.bash_completion.d/$tool
-        chmod +x ~/.bash_completion.d/$tool
-        log_success "Installed completion: ~/.bash_completion.d/$tool"
+    # 3. 구버전 completion 파일 정리 (레거시 호환성)
+    rm -f ~/.bash_completion.d/$tool 2>/dev/null
+    [ $? -eq 0 ] && log_info "Cleaned up old completion: ~/.bash_completion.d/$tool"
+
+    # 4. Bash completion 설치
+    if [ -f "$staging_dir/${tool}-completion.bash" ]; then
+        cp "$staging_dir/${tool}-completion.bash" "$BASH_COMPLETION_DIR/$tool"
+        chmod 755 "$BASH_COMPLETION_DIR/$tool"
+        log_success "Installed Bash completion: $BASH_COMPLETION_DIR/$tool"
     fi
 
-    # 4. Shell wrapper를 ~/.bashrc와 ~/.zshrc에 자동 추가
+    # 5. Zsh completion 설치
+    if [ -f "$staging_dir/_${tool}" ]; then
+        cp "$staging_dir/_${tool}" "$ZSH_SITE_FUNCTIONS_DIR/_${tool}"
+        chmod 644 "$ZSH_SITE_FUNCTIONS_DIR/_${tool}"
+        log_success "Installed Zsh completion: $ZSH_SITE_FUNCTIONS_DIR/_${tool}"
+    fi
+
+    # 6. Shell wrapper를 ~/.bashrc와 ~/.zshrc에 자동 추가
     if [ -f "$staging_dir/.bashrc.$tool" ]; then
+        _add_to_shell_config() {
+            local rc_file="$1"
+            local shell_name="$2"
+            if [ -f "$rc_file" ] && ! grep -q "source ~/.bashrc.$tool" "$rc_file" 2>/dev/null; then
+                {
+                    echo ""
+                    echo "# $tool configuration"
+                    echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool"
+                } >> "$rc_file"
+                log_success "Added to $shell_name"
+                return 0
+            fi
+            return 1
+        }
+
         # ~/.bashrc에 추가
-        if ! grep -q "source ~/.bashrc.$tool" ~/.bashrc 2>/dev/null; then
-            echo "" >> ~/.bashrc
-            echo "# $tool configuration" >> ~/.bashrc
-            echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool" >> ~/.bashrc
-            log_success "Added to ~/.bashrc"
-        fi
+        _add_to_shell_config "$HOME/.bashrc" "~/.bashrc"
 
         # zsh 사용자: ~/.zshrc에도 추가
-        if [ -f ~/.zshrc ] || [ -n "$ZSH_VERSION" ] || echo "$SHELL" | grep -q "zsh"; then
-            if ! grep -q "source ~/.bashrc.$tool" ~/.zshrc 2>/dev/null; then
-                echo "" >> ~/.zshrc
-                echo "# $tool configuration" >> ~/.zshrc
-                echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool" >> ~/.zshrc
-                log_success "Added to ~/.zshrc (restart shell to apply)"
-            fi
+        if [ -f "$HOME/.zshrc" ] || [ -n "$ZSH_VERSION" ] || echo "$SHELL" | grep -q "zsh"; then
+            _add_to_shell_config "$HOME/.zshrc" "~/.zshrc (restart shell to apply)"
         fi
     fi
+
+    echo ""
+    log_success "Setup complete!"
+    echo "Completion files installed to:"
+    echo "  Bash: $BASH_COMPLETION_DIR/$tool"
+    echo "  Zsh:  $ZSH_SITE_FUNCTIONS_DIR/_$tool"
 }
 
 # ============================================================================

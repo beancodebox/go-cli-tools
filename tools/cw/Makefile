@@ -9,6 +9,11 @@ BIN_DIR := ../../bin
 RELEASE_DIR ?= ../../dist
 VERSION ?= dev
 
+# XDG Base Directory 표준
+XDG_DATA_HOME ?= $(HOME)/.local/share
+BASH_COMPLETION_DIR = $(XDG_DATA_HOME)/bash-completion.d
+ZSH_SITE_FUNCTIONS_DIR = $(XDG_DATA_HOME)/zsh/site-functions
+
 # Cross-compile 플랫폼들
 PLATFORMS := linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64
 
@@ -50,10 +55,50 @@ test:
 # ============================================================================
 install:
 	@mkdir -p ~/.local/bin
+	@mkdir -p $(BASH_COMPLETION_DIR)
+	@mkdir -p $(ZSH_SITE_FUNCTIONS_DIR)
 	@rm -f ~/.local/bin/$(TOOL)
 	@go build -o ~/.local/bin/$(TOOL) $(CMD_DIR)
 	@echo "✓ Installed: ~/.local/bin/$(TOOL)"
+
+	@cp .bashrc.cw ~/.bashrc.cw
+	@echo "✓ Installed: ~/.bashrc.cw"
+
+	@# ~/.bashrc에 자동 등록
+	@if ! grep -q "source ~/.bashrc.cw" ~/.bashrc 2>/dev/null; then \
+		echo "" >> ~/.bashrc; \
+		echo "# cw configuration" >> ~/.bashrc; \
+		echo "[ -f ~/.bashrc.cw ] && source ~/.bashrc.cw" >> ~/.bashrc; \
+		echo "✓ Added to ~/.bashrc"; \
+	else \
+		echo "✓ Already in ~/.bashrc"; \
+	fi
+
+	@# ~/.zshrc에 자동 등록 (zsh 사용자)
+	@if [ -f ~/.zshrc ]; then \
+		if ! grep -q "source ~/.bashrc.cw" ~/.zshrc 2>/dev/null; then \
+			echo "" >> ~/.zshrc; \
+			echo "# cw configuration" >> ~/.zshrc; \
+			echo "[ -f ~/.bashrc.cw ] && source ~/.bashrc.cw" >> ~/.zshrc; \
+			echo "✓ Added to ~/.zshrc"; \
+		else \
+			echo "✓ Already in ~/.zshrc"; \
+		fi; \
+	fi
+
+	@cp cw-completion.bash $(BASH_COMPLETION_DIR)/cw
+	@chmod 755 $(BASH_COMPLETION_DIR)/cw
+	@echo "✓ Installed Bash completion: $(BASH_COMPLETION_DIR)/cw"
+
+	@cp _cw $(ZSH_SITE_FUNCTIONS_DIR)/_cw
+	@chmod 644 $(ZSH_SITE_FUNCTIONS_DIR)/_cw
+	@echo "✓ Installed Zsh completion: $(ZSH_SITE_FUNCTIONS_DIR)/_cw"
+
+	@echo ""
 	@echo "Tip: Add ~/.local/bin to your PATH"
+	@echo "Completion files installed to:"
+	@echo "  Bash: $(BASH_COMPLETION_DIR)/cw"
+	@echo "  Zsh:  $(ZSH_SITE_FUNCTIONS_DIR)/_cw"
 
 # ============================================================================
 # 청소
@@ -76,7 +121,9 @@ release-build-%:
 		-o $(abspath $(RELEASE_DIR))/staging/$(TOOL) \
 		$(CMD_DIR)
 	@chmod +x $(abspath $(RELEASE_DIR))/staging/$(TOOL)
-	@[ -f cw-completion.sh ] && cp cw-completion.sh $(abspath $(RELEASE_DIR))/staging/ || true
+	@cp .bashrc.cw $(abspath $(RELEASE_DIR))/staging/
+	@cp cw-completion.bash $(abspath $(RELEASE_DIR))/staging/
+	@cp _cw $(abspath $(RELEASE_DIR))/staging/
 	@cd $(abspath $(RELEASE_DIR))/staging && tar -czf ../$(TOOL)-$(VERSION)-$*.tar.gz . && cd ..
 	@rm -rf $(abspath $(RELEASE_DIR))/staging
 	@echo "  ✓ $(TOOL)-$(VERSION)-$*.tar.gz"

@@ -1,11 +1,14 @@
 #!/bin/sh
 
 ################################################################################
-# Claude Code Multi-Account Manager - Shell Completion (Bash & Zsh)
+# DEPRECATED: 이 파일은 더 이상 사용되지 않습니다.
 #
-# 설치 위치: ~/.bash_completion.d/ccs
-# .bashrc에 추가:
-#   [ -f ~/.bash_completion.d/ccs ] && source ~/.bash_completion.d/ccs
+# v0.1.3 이후로 XDG Base Directory 표준을 따릅니다:
+#   - Bash: ~/.local/share/bash-completion.d/ccs (ccs-completion.bash)
+#   - Zsh:  ~/.local/share/zsh/site-functions/_ccs (_ccs)
+#
+# 이 파일은 레거시 호환성을 위해 유지되고 있습니다.
+# 새로 설치하는 경우 위의 파일들을 사용하세요.
 #
 ################################################################################
 

@@ -9,6 +9,11 @@ BIN_DIR := ../../bin
 RELEASE_DIR ?= ../../dist
 VERSION ?= dev
 
+# XDG Base Directory 표준
+XDG_DATA_HOME ?= $(HOME)/.local/share
+BASH_COMPLETION_DIR = $(XDG_DATA_HOME)/bash-completion.d
+ZSH_SITE_FUNCTIONS_DIR = $(XDG_DATA_HOME)/zsh/site-functions
+
 # Cross-compile 플랫폼들
 PLATFORMS := linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64
 
@@ -50,20 +55,52 @@ test:
 # ============================================================================
 install:
 	@mkdir -p ~/.local/bin
-	@mkdir -p ~/.bash_completion.d
+	@mkdir -p $(BASH_COMPLETION_DIR)
+	@mkdir -p $(ZSH_SITE_FUNCTIONS_DIR)
 	@rm -f ~/.local/bin/$(TOOL)
 	@go build -o ~/.local/bin/$(TOOL) $(CMD_DIR)
 	@echo "✓ Installed: ~/.local/bin/$(TOOL)"
+
 	@cp .bashrc.ccs ~/.bashrc.ccs
 	@echo "✓ Installed: ~/.bashrc.ccs"
-	@cp ccs-completion.sh ~/.bash_completion.d/ccs
-	@chmod +x ~/.bash_completion.d/ccs
-	@echo "✓ Installed: ~/.bash_completion.d/ccs"
+
+	@# ~/.bashrc에 자동 등록
+	@if ! grep -q "source ~/.bashrc.ccs" ~/.bashrc 2>/dev/null; then \
+		echo "" >> ~/.bashrc; \
+		echo "# ccs configuration" >> ~/.bashrc; \
+		echo "[ -f ~/.bashrc.ccs ] && source ~/.bashrc.ccs" >> ~/.bashrc; \
+		echo "✓ Added to ~/.bashrc"; \
+	else \
+		echo "✓ Already in ~/.bashrc"; \
+	fi
+
+	@# ~/.zshrc에 자동 등록 (zsh 사용자)
+	@if [ -f ~/.zshrc ]; then \
+		if ! grep -q "source ~/.bashrc.ccs" ~/.zshrc 2>/dev/null; then \
+			echo "" >> ~/.zshrc; \
+			echo "# ccs configuration" >> ~/.zshrc; \
+			echo "[ -f ~/.bashrc.ccs ] && source ~/.bashrc.ccs" >> ~/.zshrc; \
+			echo "✓ Added to ~/.zshrc"; \
+		else \
+			echo "✓ Already in ~/.zshrc"; \
+		fi; \
+	fi
+
+	@cp ccs-completion.bash $(BASH_COMPLETION_DIR)/ccs
+	@chmod 755 $(BASH_COMPLETION_DIR)/ccs
+	@echo "✓ Installed Bash completion: $(BASH_COMPLETION_DIR)/ccs"
+
+	@cp _ccs $(ZSH_SITE_FUNCTIONS_DIR)/_ccs
+	@chmod 644 $(ZSH_SITE_FUNCTIONS_DIR)/_ccs
+	@echo "✓ Installed Zsh completion: $(ZSH_SITE_FUNCTIONS_DIR)/_ccs"
+
 	@echo ""
 	@echo "Setup complete! Add to ~/.bashrc or ~/.zshrc:"
 	@echo "  [ -f ~/.bashrc.ccs ] && source ~/.bashrc.ccs"
 	@echo ""
-	@echo "Then run: source ~/.bashrc"
+	@echo "Completion files installed to:"
+	@echo "  Bash: $(BASH_COMPLETION_DIR)/ccs"
+	@echo "  Zsh:  $(ZSH_SITE_FUNCTIONS_DIR)/_ccs"
 
 # ============================================================================
 # 청소
@@ -87,7 +124,8 @@ release-build-%:
 		$(CMD_DIR)
 	@chmod +x $(abspath $(RELEASE_DIR))/staging/$(TOOL)
 	@cp .bashrc.ccs $(abspath $(RELEASE_DIR))/staging/
-	@cp ccs-completion.sh $(abspath $(RELEASE_DIR))/staging/
+	@cp ccs-completion.bash $(abspath $(RELEASE_DIR))/staging/
+	@cp _ccs $(abspath $(RELEASE_DIR))/staging/
 	@cd $(abspath $(RELEASE_DIR))/staging && tar -czf ../$(TOOL)-$(VERSION)-$*.tar.gz . && cd ..
 	@rm -rf $(abspath $(RELEASE_DIR))/staging
 	@echo "  ✓ $(TOOL)-$(VERSION)-$*.tar.gz"

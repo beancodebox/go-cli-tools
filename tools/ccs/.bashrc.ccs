@@ -28,5 +28,19 @@ if [ -f ~/.claude-accounts/.last-active ]; then
   fi
 fi
 
-# === Shell completion 로드 (Bash & Zsh) ===
-[ -f ~/.bash_completion.d/ccs ] && source ~/.bash_completion.d/ccs 2>/dev/null
+# === Zsh completion fpath 설정 및 초기화 ===
+if [ -n "$ZSH_VERSION" ]; then
+  fpath=("${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions" $fpath)
+  autoload -U compinit && compinit -i
+fi
+
+# === Bash completion 로드 ===
+# XDG 표준 경로 우선, 레거시 경로도 지원
+for dir in \
+    "${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion.d" \
+    "$HOME/.bash_completion.d"; do
+  if [ -f "$dir/ccs" ]; then
+    source "$dir/ccs" 2>/dev/null
+    break
+  fi
+done
