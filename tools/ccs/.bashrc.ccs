@@ -28,5 +28,5 @@ if [ -f ~/.claude-accounts/.last-active ]; then
   fi
 fi
 
-# === Bash completion 로드 ===
-[ -f ~/.bash_completion.d/ccs ] && source ~/.bash_completion.d/ccs
+# === Shell completion 로드 (Bash & Zsh) ===
+[ -f ~/.bash_completion.d/ccs ] && source ~/.bash_completion.d/ccs 2>/dev/null

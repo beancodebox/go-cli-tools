@@ -199,13 +199,24 @@ install_tool() {
         log_success "Installed completion: ~/.bash_completion.d/$tool"
     fi
 
-    # 4. Shell wrapper를 ~/.bashrc에 자동 추가
+    # 4. Shell wrapper를 ~/.bashrc와 ~/.zshrc에 자동 추가
     if [ -f "$staging_dir/.bashrc.$tool" ]; then
+        # ~/.bashrc에 추가
         if ! grep -q "source ~/.bashrc.$tool" ~/.bashrc 2>/dev/null; then
             echo "" >> ~/.bashrc
             echo "# $tool configuration" >> ~/.bashrc
             echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool" >> ~/.bashrc
-            log_success "Added to ~/.bashrc (restart shell to apply)"
+            log_success "Added to ~/.bashrc"
+        fi
+
+        # zsh 사용자: ~/.zshrc에도 추가
+        if [ -f ~/.zshrc ] || [ -n "$ZSH_VERSION" ] || echo "$SHELL" | grep -q "zsh"; then
+            if ! grep -q "source ~/.bashrc.$tool" ~/.zshrc 2>/dev/null; then
+                echo "" >> ~/.zshrc
+                echo "# $tool configuration" >> ~/.zshrc
+                echo "[ -f ~/.bashrc.$tool ] && source ~/.bashrc.$tool" >> ~/.zshrc
+                log_success "Added to ~/.zshrc (restart shell to apply)"
+            fi
         fi
     fi
 }
